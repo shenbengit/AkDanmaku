@@ -32,6 +32,7 @@ android {
 dependencies {
 
 //    implementation 'com.kuaishou:akdanmaku:1.0.3'
+    implementation 'com.github.shenbengit:AkDanmaku:1.0.0'
 
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
     implementation 'androidx.core:core-ktx:1.6.0'
@@ -40,7 +41,7 @@ dependencies {
     implementation 'androidx.constraintlayout:constraintlayout:2.1.0'
 
     implementation 'com.google.code.gson:gson:2.8.6'
-    implementation project(path: ':library')
+//    implementation project(path: ':library')
 
     debugImplementation 'com.squareup.leakcanary:leakcanary-android:2.12'
 }
