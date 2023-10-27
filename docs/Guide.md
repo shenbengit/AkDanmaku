@@ -14,16 +14,20 @@ AkDanmaku 1.0 Android 接入指南
 ### 引用
 #### gradle
 
+[![](https://jitpack.io/v/shenbengit/AkDanmaku.svg)](https://jitpack.io/#shenbengit/AkDanmaku)
+
 ```groovy
 // 顶层 build.gradle
 repositories {
     mavenCentral()
+    maven { url 'https://jitpack.io' }
 }
 
 // build.gradle
 
 dependencies {
-    implementation 'com.kuaishou:akdanmaku:1.0.3'
+    // implementation 'com.kuaishou:akdanmaku:1.0.3'
+    implementation 'com.github.shenbengit:AkDanmaku:Tag'
 }
 ```
 
