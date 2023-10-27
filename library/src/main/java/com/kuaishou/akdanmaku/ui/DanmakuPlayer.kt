@@ -45,6 +45,7 @@ import com.kuaishou.akdanmaku.ext.startTrace
 import com.kuaishou.akdanmaku.render.DanmakuRenderer
 import com.kuaishou.akdanmaku.utils.Fraction
 import com.kuaishou.akdanmaku.utils.ObjectPool
+import java.lang.ref.WeakReference
 import java.util.concurrent.Semaphore
 import kotlin.math.max
 
@@ -76,7 +77,7 @@ class DanmakuPlayer(renderer: DanmakuRenderer, dataSource: DataSource? = null) {
     var isManualStep = false
   }
 
-  private var danmakuView: DanmakuView? = null
+  private var danmakuView: WeakReference<DanmakuView>? = null
   internal val engine = DanmakuEngine.get(renderer)
   private val actionThread by lazy  { HandlerThread("ActionThread").apply { start() } }
   private val actionHandler by lazy { ActionHandler(actionThread.looper) }
@@ -89,6 +90,7 @@ class DanmakuPlayer(renderer: DanmakuRenderer, dataSource: DataSource? = null) {
 
   private val drawSemaphore = Semaphore(0)
 
+  @Volatile
   private var started = false
 
   private val dataSystem: DataSystem?
@@ -104,6 +106,8 @@ class DanmakuPlayer(renderer: DanmakuRenderer, dataSource: DataSource? = null) {
         engine.getSystem(RenderSystem::class.java)?.listener = value
       }
     }
+
+  @Volatile
   var isReleased: Boolean = false
     private set
 
@@ -114,12 +118,15 @@ class DanmakuPlayer(renderer: DanmakuRenderer, dataSource: DataSource? = null) {
     dataSource?.setListener(dataSystem)
   }
 
+  /**
+   * 运行在[actionHandler] [actionThread] 线程中
+   */
   private fun postFrameCallback() {
     Choreographer.getInstance().postFrameCallback(frameCallback)
   }
 
   private fun updateFrame(deltaTimeSeconds: Float? = null) {
-    if (!started) {
+    if (!started || isReleased) {
       return
     }
 
@@ -134,7 +141,7 @@ class DanmakuPlayer(renderer: DanmakuRenderer, dataSource: DataSource? = null) {
       // Wait for acquiring a permit.
       drawSemaphore.acquire()
     }
-    if (!started) {
+    if (!started || isReleased) {
       return
     }
     startTrace("updateFrame")
@@ -142,7 +149,7 @@ class DanmakuPlayer(renderer: DanmakuRenderer, dataSource: DataSource? = null) {
     engine.act()
     // Post invalidate view to force onDraw's call on next frame.
     startTrace("postInvalidate")
-    danmakuView?.postInvalidateOnAnimation()
+    danmakuView?.get()?.postInvalidateOnAnimation()
     endTrace()
     endTrace()
   }
@@ -186,8 +193,8 @@ class DanmakuPlayer(renderer: DanmakuRenderer, dataSource: DataSource? = null) {
    * 绑定后弹幕的绘制将在此 View 上进行
    */
   fun bindView(danmakuView: DanmakuView) {
-    this.danmakuView?.danmakuPlayer = null
-    this.danmakuView = danmakuView
+    this.danmakuView?.get()?.danmakuPlayer = null
+    this.danmakuView = WeakReference(danmakuView)
     danmakuView.danmakuPlayer = this
     engine.context.displayer = danmakuView.displayer
     notifyDisplayerSizeChanged(danmakuView.displayer.width, danmakuView.displayer.height)
@@ -228,9 +235,10 @@ class DanmakuPlayer(renderer: DanmakuRenderer, dataSource: DataSource? = null) {
     if (isReleased) {
       return
     }
+    danmakuView = null
     isReleased = true
     actionHandler.removeCallbacksAndMessages(null)
-    Choreographer.getInstance().removeFrameCallback(frameCallback)
+//    Choreographer.getInstance().removeFrameCallback(frameCallback)
     started = false
     actionThread.quitSafely()
     actionThread.join(50L)
@@ -367,9 +375,10 @@ class DanmakuPlayer(renderer: DanmakuRenderer, dataSource: DataSource? = null) {
     }
   }
 
-  private class FrameCallback(private val handler: Handler) : Choreographer.FrameCallback {
-
+  private class FrameCallback(handler: Handler) : Choreographer.FrameCallback {
+    private val handlerWeakReference = WeakReference(handler)
     override fun doFrame(frameTimeNanos: Long) {
+      val handler = handlerWeakReference.get() ?: return
       handler.removeMessages(MSG_FRAME_UPDATE)
       handler.sendEmptyMessage(MSG_FRAME_UPDATE)
     }
