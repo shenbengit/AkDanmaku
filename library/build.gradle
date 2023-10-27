@@ -52,7 +52,6 @@ dependencies {
 // so they get packed with the APK.
 task copyAndroidNatives {
     doFirst {
-        file("jniLibs/armeabi/").mkdirs()
         file("jniLibs/armeabi-v7a/").mkdirs()
         file("jniLibs/arm64-v8a/").mkdirs()
         file("jniLibs/x86_64/").mkdirs()
@@ -62,7 +61,6 @@ task copyAndroidNatives {
             def outputDir = null
             if (jar.name.endsWith("natives-arm64-v8a.jar")) outputDir = file("jniLibs/arm64-v8a")
             if (jar.name.endsWith("natives-armeabi-v7a.jar")) outputDir = file("jniLibs/armeabi-v7a")
-            if(jar.name.endsWith("natives-armeabi.jar")) outputDir = file("jniLibs/armeabi")
             if(jar.name.endsWith("natives-x86_64.jar")) outputDir = file("jniLibs/x86_64")
             if(jar.name.endsWith("natives-x86.jar")) outputDir = file("jniLibs/x86")
             if(outputDir != null) {
