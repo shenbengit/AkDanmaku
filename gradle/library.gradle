@@ -37,5 +37,5 @@ dependencies {
     // jar包依赖
     implementation fileTree(include: ['*.jar'], dir: 'libs')
 
-    implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+    compileOnly "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
 }
